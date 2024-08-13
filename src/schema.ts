@@ -24,9 +24,7 @@ export const createSchema = <T extends SchemaConfig>(
   name: string,
   config: T
 ): Schema<T> => {
-  const $infer: InferModel<Schema<T>> = undefined as unknown as InferModel<
-    Schema<T>
-  >;
+  const $infer = undefined as unknown as InferModel<Schema<T>>;
   return {
     _: {
       columns: config.columns,
