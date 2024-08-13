@@ -14,6 +14,12 @@ export interface Schema<T extends SchemaConfig = SchemaConfig> {
   $infer: InferModel<Schema<T>>;
 }
 
+export type InferDTypes<TColumns extends Record<string, DType>> = Simplify<{
+  [Key in keyof TColumns]: GetDType<GetConfig<TColumns[Key]>>;
+}>;
+
+export type InferModel<T extends Schema> = InferDTypes<T["_"]["columns"]>;
+
 export const createSchema = <T extends SchemaConfig>(
   name: string,
   config: T
@@ -29,9 +35,3 @@ export const createSchema = <T extends SchemaConfig>(
     $infer,
   };
 };
-
-export type InferDTypes<TColumns extends Record<string, DType>> = Simplify<{
-  [Key in keyof TColumns]: GetDType<GetConfig<TColumns[Key]>>;
-}>;
-
-export type InferModel<T extends Schema> = InferDTypes<T["_"]["columns"]>;
