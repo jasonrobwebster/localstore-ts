@@ -1,4 +1,4 @@
-import { Simplify } from "./utils";
+import type { Simplify } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
 export interface DTypeBaseConfig {
@@ -42,6 +42,12 @@ export type IsRequired<T extends DTypeBase> = T & {
     required: true;
   };
 };
+
+export type RequiredKey<TKey extends string, T extends DType> =
+  T extends IsRequired<T> ? TKey : never;
+
+export type OptionalKey<TKey extends string, T extends DType> =
+  T extends IsRequired<T> ? never : TKey;
 
 export interface DType<
   T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
