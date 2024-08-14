@@ -13,6 +13,7 @@ export interface Schema<T extends SchemaConfig = SchemaConfig> {
     columns: T;
     name: string;
   };
+  getDefault: () => InferSchema<Schema<T>>;
   $infer: InferSchema<Schema<T>>;
 }
 
@@ -37,11 +38,22 @@ export const createSchema = <T extends SchemaConfig>(
   dtypes: T
 ): Schema<T> => {
   const $infer = undefined as unknown as InferSchema<Schema<T>>;
+  const getDefault = () => {
+    const $default: InferSchema<Schema<T>> = {} as InferSchema<Schema<T>>;
+    for (const key in dtypes) {
+      const dtype = dtypes[key];
+      if (dtype._.$defaultFn) {
+        Object.assign($default, { [key]: dtype._.$defaultFn() });
+      }
+    }
+    return $default;
+  };
   return {
     _: {
       columns: dtypes,
       name,
     },
+    getDefault,
     $infer,
   };
 };

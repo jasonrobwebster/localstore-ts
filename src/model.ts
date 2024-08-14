@@ -12,10 +12,7 @@ export interface Model<T extends ModelConfig = ModelConfig> {
     schemas: T;
   };
   get: <TSchema extends Schema>(schema: TSchema) => TSchema["$infer"][];
-  set: <TSchema extends Schema>(
-    schema: TSchema,
-    value: TSchema["$infer"] | TSchema["$infer"][]
-  ) => Insert<TSchema>;
+  set: <TSchema extends Schema>(schema: TSchema) => Insert<TSchema>;
   insert: <TSchema extends Schema>(schema: TSchema) => Insert<TSchema>;
   update: <TSchema extends Schema>(schema: TSchema) => Update<TSchema>;
   clear: <TSchema extends Schema>(schema: TSchema) => void;
@@ -92,8 +89,8 @@ export const createStoreModel = <
   T extends ModelConfig,
   U extends Storage = Storage,
 >(
-  schemas: T,
-  store: U
+  store: U,
+  schemas: T
 ): Model<T> => {
   const $infer = undefined as unknown as InferModel<Model<T>>;
   return {
@@ -114,10 +111,15 @@ export const createStoreModel = <
       const insertFn = <TSchema extends T[string]>(
         values: TSchema["$infer"] | TSchema["$infer"][]
       ) => {
-        if (!Array.isArray(values)) {
-          values = [values];
-        }
-        store.setItem(schema._.name, JSON.stringify(values));
+        const arrValues = !Array.isArray(values) ? [values] : values;
+        const $default = schema.getDefault();
+        const valuesWithDefault = arrValues.map((value) => {
+          return {
+            ...$default,
+            ...value,
+          };
+        });
+        store.setItem(schema._.name, JSON.stringify(valuesWithDefault));
       };
       return createInsert(insertFn);
     },
@@ -125,11 +127,16 @@ export const createStoreModel = <
       const insertFn = <TSchema extends T[string]>(
         values: TSchema["$infer"] | TSchema["$infer"][]
       ) => {
-        if (!Array.isArray(values)) {
-          values = [values];
-        }
+        const arrValues = !Array.isArray(values) ? [values] : values;
+        const $default = schema.getDefault();
+        const valuesWithDefault = arrValues.map((value) => {
+          return {
+            ...$default,
+            ...value,
+          };
+        });
         const existingValues = JSON.parse(store.getItem(schema._.name) ?? "[]");
-        existingValues.push(values);
+        existingValues.push(...valuesWithDefault);
         store.setItem(schema._.name, JSON.stringify(existingValues));
       };
       return createInsert(insertFn);
@@ -172,8 +179,8 @@ export const createStoreModel = <
   };
 };
 
-export const createLocalStoreModel = <T extends ModelConfig>(config: T) =>
-  createStoreModel(config, localStorage);
+export const createLocalStoreModel = <T extends ModelConfig>(schemas: T) =>
+  createStoreModel(localStorage, schemas);
 
-export const createSessionStoreModel = <T extends ModelConfig>(config: T) =>
-  createStoreModel(config, sessionStorage);
+export const createSessionStoreModel = <T extends ModelConfig>(schemas: T) =>
+  createStoreModel(sessionStorage, schemas);

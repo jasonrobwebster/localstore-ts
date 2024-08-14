@@ -15,8 +15,9 @@ export type RequiredConfig<T extends DTypeBaseConfig> = T & {
   readonly required: true;
 };
 
-export type WithType<T extends DTypeBaseConfig> = T & {
-  readonly $type: unknown;
+export type WithType<T extends DTypeBaseConfig, U = unknown> = T & {
+  readonly $type: U;
+  readonly $defaultFn?: () => U;
 };
 
 export interface DTypeBase<
@@ -34,6 +35,7 @@ export type IsTransient<T extends DTypeBase> = T & {
 export type HasDefault<T extends DTypeBase> = T & {
   _: {
     hasDefault: true;
+    $defaultFn: () => T["_"]["$type"];
   };
 };
 
@@ -46,31 +48,24 @@ export type IsRequired<T extends DTypeBase> = T & {
 export interface DType<
   T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
 > extends DTypeBase<T> {
-  $defaultFn: T extends { hasDefault: true } ? () => T["$type"] : undefined;
-  required: () => IsRequired<DType<T>>;
-  transient: () => IsTransient<DType<T>>;
-  default: (fn: () => T["$type"]) => HasDefault<DType<T>>;
+  required: () => IsRequired<this>;
+  transient: () => IsTransient<this>;
+  default: (fn: () => T["$type"]) => HasDefault<this>;
 }
 
 export type GetDType<T extends WithType<DTypeBaseConfig>> = T["$type"];
 export type GetConfig<T extends DTypeBase> = T["_"];
 
-type TypeDType<U extends DTypeBaseConfig, T> = DType<
-  U & {
-    $type: T;
-  }
->;
-
-export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
-  factoryConfig?: Partial<U>,
-  factoryOptions?: Partial<TypeDType<U, T>>
+export const dtypeFactory = <
+  T,
+  TFactoryConfig extends DTypeBaseConfig = DTypeBaseConfig,
+>(
+  factoryConfig?: Partial<TFactoryConfig>
 ) => {
-  interface DTypeConfig extends DTypeBaseConfig {
-    $type: T;
-  }
-  const dtype = <U extends DTypeBaseConfig = DTypeBaseConfig>(
-    config?: Partial<U>,
-    options?: Partial<TypeDType<U, T>>
+  type DTypeConfig = WithType<DTypeBaseConfig, T>;
+
+  const dtype = <TConfigBase extends DTypeConfig = DTypeConfig>(
+    config?: Partial<TConfigBase>
   ): Simplify<DType<DTypeConfig>> => {
     return {
       _: {
@@ -81,20 +76,21 @@ export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
         ...factoryConfig,
         ...config,
       },
-      $defaultFn: options?.$defaultFn ?? factoryOptions?.$defaultFn,
       required: () =>
-        dtype({ ...factoryConfig, required: true }) as IsRequired<
+        dtype({ ...factoryConfig, ...config, required: true }) as IsRequired<
           DType<DTypeConfig>
         >,
       transient: () =>
-        dtype({ ...factoryConfig, transient: true }) as IsTransient<
+        dtype({ ...factoryConfig, ...config, transient: true }) as IsTransient<
           DType<DTypeConfig>
         >,
       default: (fn: () => T) =>
-        dtype(
-          { ...factoryConfig, hasDefault: true },
-          { $defaultFn: fn }
-        ) as HasDefault<DType<DTypeConfig>>,
+        dtype({
+          ...factoryConfig,
+          ...config,
+          hasDefault: true,
+          $defaultFn: fn,
+        }) as HasDefault<DType<DTypeConfig>>,
     };
   };
   return dtype;
@@ -102,7 +98,4 @@ export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
 
 export const text = dtypeFactory<string>();
 export const number = dtypeFactory<number>();
-export const uuid = dtypeFactory<string, HasDefaultConfig<DTypeBaseConfig>>(
-  { hasDefault: true },
-  { $defaultFn: () => uuidv4() }
-);
+export const uuid = () => dtypeFactory<string>()().default(() => uuidv4());
