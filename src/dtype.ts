@@ -43,12 +43,6 @@ export type IsRequired<T extends DTypeBase> = T & {
   };
 };
 
-export type RequiredKey<TKey extends string, T extends DType> =
-  T extends IsRequired<T> ? TKey : never;
-
-export type OptionalKey<TKey extends string, T extends DType> =
-  T extends IsRequired<T> ? never : TKey;
-
 export interface DType<
   T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
 > extends DTypeBase<T> {

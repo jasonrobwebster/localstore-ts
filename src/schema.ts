@@ -1,21 +1,16 @@
-import type {
-  DType,
-  GetConfig,
-  GetDType,
-  OptionalKey,
-  RequiredKey,
-} from "./dtype";
+import type { DType, GetConfig, GetDType } from "./dtype";
+import type { OptionalKey, RequiredKey } from "./operations";
 import type { Simplify } from "./utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface SchemaConfig<TColumn extends DType = DType<any>> {
-  columns: Record<string, TColumn>;
-}
+export type SchemaConfig<TColumn extends DType = DType<any>> = Record<
+  string,
+  TColumn
+>;
 
 export interface Schema<T extends SchemaConfig = SchemaConfig> {
   readonly _: {
-    columns: T["columns"];
-    name: string;
+    columns: T;
   };
   $infer: InferSchema<Schema<T>>;
 }
@@ -36,15 +31,11 @@ export type InferDTypes<TColumns extends Record<string, DType>> = Simplify<
 
 export type InferSchema<T extends Schema> = InferDTypes<T["_"]["columns"]>;
 
-export const createSchema = <T extends SchemaConfig>(
-  name: string,
-  config: T
-): Schema<T> => {
+export const createSchema = <T extends SchemaConfig>(dtypes: T): Schema<T> => {
   const $infer = undefined as unknown as InferSchema<Schema<T>>;
   return {
     _: {
-      columns: config.columns,
-      name: name,
+      columns: dtypes,
     },
     $infer,
   };
