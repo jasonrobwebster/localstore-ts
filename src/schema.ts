@@ -11,6 +11,7 @@ export type SchemaConfig<TColumn extends DType = DType<any>> = Record<
 export interface Schema<T extends SchemaConfig = SchemaConfig> {
   readonly _: {
     columns: T;
+    name: string;
   };
   $infer: InferSchema<Schema<T>>;
 }
@@ -31,11 +32,15 @@ export type InferDTypes<TColumns extends Record<string, DType>> = Simplify<
 
 export type InferSchema<T extends Schema> = InferDTypes<T["_"]["columns"]>;
 
-export const createSchema = <T extends SchemaConfig>(dtypes: T): Schema<T> => {
+export const createSchema = <T extends SchemaConfig>(
+  name: string,
+  dtypes: T
+): Schema<T> => {
   const $infer = undefined as unknown as InferSchema<Schema<T>>;
   return {
     _: {
       columns: dtypes,
+      name,
     },
     $infer,
   };
