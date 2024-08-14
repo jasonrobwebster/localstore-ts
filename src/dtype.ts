@@ -50,32 +50,32 @@ type TypeDType<U extends DTypeBaseConfig, T> = DType<
 >;
 
 export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
-  config?: Partial<U>,
-  options?: Partial<TypeDType<U, T>>
+  factoryConfig?: Partial<U>,
+  factoryOptions?: Partial<TypeDType<U, T>>
 ) => {
   interface DTypeConfig extends DTypeBaseConfig {
     $type: T;
   }
   const dtype = <U extends DTypeBaseConfig = DTypeBaseConfig>(
-    dtypeConfig?: Partial<U>,
-    dtypeOptions?: Partial<TypeDType<U, T>>
+    config?: Partial<U>,
+    options?: Partial<TypeDType<U, T>>
   ): Simplify<DType<DTypeConfig>> => {
     return {
       _: {
         $type: undefined as unknown as T,
         transient: false,
         hasDefault: false,
+        ...factoryConfig,
         ...config,
-        ...dtypeConfig,
       },
-      $defaultFn: dtypeOptions?.$defaultFn ?? options?.$defaultFn,
+      $defaultFn: options?.$defaultFn ?? factoryOptions?.$defaultFn,
       transient: () =>
-        dtype({ ...config, transient: true }) as IsTransient<
+        dtype({ ...factoryConfig, transient: true }) as IsTransient<
           DType<DTypeConfig>
         >,
       default: (fn: () => T) =>
         dtype(
-          { ...config, hasDefault: true },
+          { ...factoryConfig, hasDefault: true },
           { $defaultFn: fn }
         ) as HasDefault<DType<DTypeConfig>>,
     };
