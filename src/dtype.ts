@@ -4,10 +4,15 @@ import { v4 as uuidv4 } from "uuid";
 export interface DTypeBaseConfig {
   readonly transient: boolean;
   readonly hasDefault: boolean;
+  readonly required: boolean;
 }
 
 export type HasDefaultConfig<T extends DTypeBaseConfig> = T & {
   readonly hasDefault: true;
+};
+
+export type RequiredConfig<T extends DTypeBaseConfig> = T & {
+  readonly required: true;
 };
 
 export type WithType<T extends DTypeBaseConfig> = T & {
@@ -32,10 +37,17 @@ export type HasDefault<T extends DTypeBase> = T & {
   };
 };
 
+export type IsRequired<T extends DTypeBase> = T & {
+  _: {
+    required: true;
+  };
+};
+
 export interface DType<
   T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
 > extends DTypeBase<T> {
   $defaultFn: T extends { hasDefault: true } ? () => T["$type"] : undefined;
+  required: () => IsRequired<DType<T>>;
   transient: () => IsTransient<DType<T>>;
   default: (fn: () => T["$type"]) => HasDefault<DType<T>>;
 }
@@ -65,10 +77,15 @@ export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
         $type: undefined as unknown as T,
         transient: false,
         hasDefault: false,
+        required: false,
         ...factoryConfig,
         ...config,
       },
       $defaultFn: options?.$defaultFn ?? factoryOptions?.$defaultFn,
+      required: () =>
+        dtype({ ...factoryConfig, required: true }) as IsRequired<
+          DType<DTypeConfig>
+        >,
       transient: () =>
         dtype({ ...factoryConfig, transient: true }) as IsTransient<
           DType<DTypeConfig>
