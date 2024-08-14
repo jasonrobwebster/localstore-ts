@@ -39,7 +39,7 @@ interface InsertValues<TSchema extends Schema> {
 
 interface Update<TSchema extends Schema> {
   where: (condition: (value: TSchema["$infer"]) => boolean) => Update<TSchema>;
-  values: (values: Partial<TSchema["$infer"]>) => UpdateValues<TSchema>;
+  value: (values: Partial<TSchema["$infer"]>) => UpdateValues<TSchema>;
 }
 
 interface UpdateValues<TSchema extends Schema> {
@@ -63,30 +63,20 @@ const createInsert = <TSchema extends Schema>(
 };
 
 const createUpdate = <TSchema extends Schema>(
-  getValues: () => TSchema["$infer"][],
-  filterFn: (value: TSchema["$infer"]) => boolean,
-  setFn: (values: TSchema["$infer"][]) => void,
   updateFn: (
-    getValues: () => TSchema["$infer"][],
-    filterFn: (value: TSchema["$infer"]) => boolean,
-    setFn: (values: TSchema["$infer"][]) => void,
-    value: Partial<TSchema["$infer"]>
-  ) => TSchema["$infer"][]
+    value: Partial<TSchema["$infer"]>,
+    filterFn?: (value: TSchema["$infer"]) => boolean
+  ) => TSchema["$infer"][],
+  filterFn?: (value: TSchema["$infer"]) => boolean
 ): Update<TSchema> => {
   return {
     where: (condition) => {
-      const values = getValues();
-      const getFilteredValues = () => values.filter(condition);
-      return createUpdate(
-        getFilteredValues,
-        condition,
-        setFn,
-        (getFilteredValues, condition, setFn, value) =>
-          updateFn(getFilteredValues, condition, setFn, value)
-      );
+      const newFilterFn = (value: TSchema["$infer"]) =>
+        (filterFn?.(value) ?? true) && condition(value);
+      return createUpdate(updateFn, newFilterFn);
     },
-    values: (values) => {
-      const updatedValues = updateFn(getValues, filterFn, setFn, values);
+    value: (value) => {
+      const updatedValues = updateFn(value, filterFn);
       return {
         returning: () => {
           return updatedValues;
@@ -142,31 +132,30 @@ export const createLocalStoreModel = <T extends ModelConfig>(
     },
     update: (schema) => {
       const updateFn = (
-        getValues: () => (typeof schema)["$infer"][],
-        filterFn: (value: (typeof schema)["$infer"]) => boolean,
-        setFn: (values: (typeof schema)["$infer"][]) => void,
-        values: Partial<(typeof schema)["$infer"]>
+        value: Partial<(typeof schema)["$infer"]>,
+        filterFn?: (value: (typeof schema)["$infer"]) => boolean
       ) => {
-        const allValues = getValues();
-        const filteredValues = allValues.filter(filterFn);
-        const rest = allValues.filter((value) => !filterFn(value));
-        const updatedValues = filteredValues.map((value) => {
+        const allValues = JSON.parse(
+          localStorage.getItem(schema._.name) ?? "[]"
+        ) as (typeof schema)["$infer"][];
+        let filteredValues = allValues;
+        if (filterFn) {
+          filteredValues = allValues.filter(filterFn);
+        }
+        const rest = allValues.filter((value) => !(filterFn?.(value) ?? true));
+        const updatedValues = filteredValues.map((oldValue) => {
           return {
+            ...oldValue,
             ...value,
-            ...values,
           };
         });
-        setFn([...rest, ...updatedValues]);
+        localStorage.setItem(
+          schema._.name,
+          JSON.stringify([...rest, ...updatedValues])
+        );
         return updatedValues;
       };
-      return createUpdate(
-        () => JSON.parse(localStorage.getItem(schema._.name) ?? "[]"),
-        () => true,
-        (values) => {
-          localStorage.setItem(schema._.name, JSON.stringify(values));
-        },
-        updateFn
-      );
+      return createUpdate(updateFn);
     },
   };
 };
@@ -213,31 +202,30 @@ export const createSessionStoreModel = <T extends ModelConfig>(
     },
     update: (schema) => {
       const updateFn = (
-        getValues: () => (typeof schema)["$infer"][],
-        filterFn: (value: (typeof schema)["$infer"]) => boolean,
-        setFn: (values: (typeof schema)["$infer"][]) => void,
-        values: Partial<(typeof schema)["$infer"]>
+        value: Partial<(typeof schema)["$infer"]>,
+        filterFn?: (value: (typeof schema)["$infer"]) => boolean
       ) => {
-        const allValues = getValues();
-        const filteredValues = allValues.filter(filterFn);
-        const rest = allValues.filter((value) => !filterFn(value));
-        const updatedValues = filteredValues.map((value) => {
+        const allValues = JSON.parse(
+          sessionStorage.getItem(schema._.name) ?? "[]"
+        ) as (typeof schema)["$infer"][];
+        let filteredValues = allValues;
+        if (filterFn) {
+          filteredValues = allValues.filter(filterFn);
+        }
+        const rest = allValues.filter((value) => !(filterFn?.(value) ?? true));
+        const updatedValues = filteredValues.map((oldValue) => {
           return {
+            ...oldValue,
             ...value,
-            ...values,
           };
         });
-        setFn([...rest, ...updatedValues]);
+        sessionStorage.setItem(
+          schema._.name,
+          JSON.stringify([...rest, ...updatedValues])
+        );
         return updatedValues;
       };
-      return createUpdate(
-        () => JSON.parse(sessionStorage.getItem(schema._.name) ?? "[]"),
-        () => true,
-        (values) => {
-          sessionStorage.setItem(schema._.name, JSON.stringify(values));
-        },
-        updateFn
-      );
+      return createUpdate(updateFn);
     },
   };
 };
