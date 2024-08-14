@@ -8,5 +8,8 @@
     "moduleResolution": "Node",
     "strict": true,
     "esModuleInterop": true,
+    "paths": {
+      "~/*": ["./src/*"]
+    }
   }
 }
