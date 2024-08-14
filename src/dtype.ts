@@ -1,18 +1,21 @@
 import { Simplify } from "./utils";
 import { v4 as uuidv4 } from "uuid";
 
-export interface DTypeBaseConfig<HasDefault extends boolean = boolean> {
+export interface DTypeBaseConfig {
   readonly transient: boolean;
-  readonly hasDefault: HasDefault;
+  readonly hasDefault: boolean;
 }
 
-export interface TypedDTypeBaseConfig<HasDefault extends boolean = boolean>
-  extends DTypeBaseConfig<HasDefault> {
+export type HasDefaultConfig<T extends DTypeBaseConfig> = T & {
+  readonly hasDefault: true;
+};
+
+export type WithType<T extends DTypeBaseConfig> = T & {
   readonly $type: unknown;
-}
+};
 
 export interface DTypeBase<
-  T extends TypedDTypeBaseConfig = TypedDTypeBaseConfig,
+  T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
 > {
   _: Simplify<T>;
 }
@@ -29,48 +32,60 @@ export type HasDefault<T extends DTypeBase> = T & {
   };
 };
 
-export interface DType<T extends TypedDTypeBaseConfig = TypedDTypeBaseConfig>
-  extends DTypeBase<T> {
+export interface DType<
+  T extends WithType<DTypeBaseConfig> = WithType<DTypeBaseConfig>,
+> extends DTypeBase<T> {
   $defaultFn: T extends { hasDefault: true } ? () => T["$type"] : undefined;
   transient: () => IsTransient<DType<T>>;
   default: (fn: () => T["$type"]) => HasDefault<DType<T>>;
 }
 
-export type GetDType<T extends TypedDTypeBaseConfig> = T["$type"];
+export type GetDType<T extends WithType<DTypeBaseConfig>> = T["$type"];
 export type GetConfig<T extends DTypeBase> = T["_"];
+
+type TypeDType<U extends DTypeBaseConfig, T> = DType<
+  U & {
+    $type: T;
+  }
+>;
 
 export const dtypeFactory = <T, U extends DTypeBaseConfig = DTypeBaseConfig>(
   config?: Partial<U>,
-  options?: Partial<DType<U & { $type: T }>>
+  options?: Partial<TypeDType<U, T>>
 ) => {
   interface DTypeConfig extends DTypeBaseConfig {
     $type: T;
   }
-  return (): Simplify<DType<DTypeConfig>> => {
+  const dtype = <U extends DTypeBaseConfig = DTypeBaseConfig>(
+    dtypeConfig?: Partial<U>,
+    dtypeOptions?: Partial<TypeDType<U, T>>
+  ): Simplify<DType<DTypeConfig>> => {
     return {
       _: {
         $type: undefined as unknown as T,
         transient: false,
         hasDefault: false,
         ...config,
+        ...dtypeConfig,
       },
-      $defaultFn: options?.$defaultFn,
+      $defaultFn: dtypeOptions?.$defaultFn ?? options?.$defaultFn,
       transient: () =>
-        dtypeFactory<T>({ ...config, transient: true })() as IsTransient<
+        dtype({ ...config, transient: true }) as IsTransient<
           DType<DTypeConfig>
         >,
       default: (fn: () => T) =>
-        dtypeFactory<T, TypedDTypeBaseConfig<true>>(
+        dtype(
           { ...config, hasDefault: true },
           { $defaultFn: fn }
-        )() as HasDefault<DType<DTypeConfig>>,
+        ) as HasDefault<DType<DTypeConfig>>,
     };
   };
+  return dtype;
 };
 
 export const text = dtypeFactory<string>();
 export const number = dtypeFactory<number>();
-export const uuid = dtypeFactory<string, TypedDTypeBaseConfig<true>>(
+export const uuid = dtypeFactory<string, HasDefaultConfig<DTypeBaseConfig>>(
   { hasDefault: true },
   { $defaultFn: () => uuidv4() }
 );
