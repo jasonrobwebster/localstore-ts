@@ -86,8 +86,12 @@ const createUpdate = <TSchema extends Schema>(
   };
 };
 
-export const createLocalStoreModel = <T extends ModelConfig>(
-  config: T
+export const createStoreModel = <
+  T extends ModelConfig,
+  U extends Storage = Storage,
+>(
+  config: T,
+  store: U
 ): Model<T> => {
   const $infer = undefined as unknown as InferModel<Model<T>>;
   return {
@@ -96,11 +100,11 @@ export const createLocalStoreModel = <T extends ModelConfig>(
     },
     $infer,
     get: (schema) => {
-      if (!localStorage.getItem(schema._.name)) {
+      if (!store.getItem(schema._.name)) {
         return [];
       } else {
         return JSON.parse(
-          localStorage.getItem(schema._.name)!
+          store.getItem(schema._.name)!
         ) as (typeof schema)["$infer"][];
       }
     },
@@ -111,7 +115,7 @@ export const createLocalStoreModel = <T extends ModelConfig>(
         if (!Array.isArray(values)) {
           values = [values];
         }
-        localStorage.setItem(schema._.name, JSON.stringify(values));
+        store.setItem(schema._.name, JSON.stringify(values));
       };
       return createInsert(insertFn);
     },
@@ -122,11 +126,9 @@ export const createLocalStoreModel = <T extends ModelConfig>(
         if (!Array.isArray(values)) {
           values = [values];
         }
-        const existingValues = JSON.parse(
-          localStorage.getItem(schema._.name) ?? "[]"
-        );
+        const existingValues = JSON.parse(store.getItem(schema._.name) ?? "[]");
         existingValues.push(values);
-        localStorage.setItem(schema._.name, JSON.stringify(existingValues));
+        store.setItem(schema._.name, JSON.stringify(existingValues));
       };
       return createInsert(insertFn);
     },
@@ -136,7 +138,7 @@ export const createLocalStoreModel = <T extends ModelConfig>(
         filterFn?: (value: (typeof schema)["$infer"]) => boolean
       ) => {
         const allValues = JSON.parse(
-          localStorage.getItem(schema._.name) ?? "[]"
+          store.getItem(schema._.name) ?? "[]"
         ) as (typeof schema)["$infer"][];
         let filteredValues = allValues;
         if (filterFn) {
@@ -149,7 +151,7 @@ export const createLocalStoreModel = <T extends ModelConfig>(
             ...value,
           };
         });
-        localStorage.setItem(
+        store.setItem(
           schema._.name,
           JSON.stringify([...rest, ...updatedValues])
         );
@@ -160,72 +162,8 @@ export const createLocalStoreModel = <T extends ModelConfig>(
   };
 };
 
-export const createSessionStoreModel = <T extends ModelConfig>(
-  config: T
-): Model<T> => {
-  const $infer = undefined as unknown as InferModel<Model<T>>;
-  return {
-    _: {
-      schemas: config,
-    },
-    $infer,
-    get: (schema) => {
-      if (!sessionStorage.getItem(schema._.name)) {
-        return [];
-      } else {
-        return JSON.parse(
-          sessionStorage.getItem(schema._.name)!
-        ) as (typeof schema)["$infer"][];
-      }
-    },
-    set: (schema) => {
-      const insertFn = <TSchema extends T[string]>(
-        values: TSchema["$infer"] | TSchema["$infer"][]
-      ) => {
-        const arrValues = !Array.isArray(values) ? [values] : values;
-        sessionStorage.setItem(schema._.name, JSON.stringify(arrValues));
-      };
-      return createInsert(insertFn);
-    },
-    insert: (schema) => {
-      const insertFn = <TSchema extends T[string]>(
-        values: TSchema["$infer"] | TSchema["$infer"][]
-      ) => {
-        const arrValues = !Array.isArray(values) ? [values] : values;
-        const existingValues = JSON.parse(
-          sessionStorage.getItem(schema._.name) ?? "[]"
-        ) as TSchema["$infer"][];
-        existingValues.push(arrValues);
-        sessionStorage.setItem(schema._.name, JSON.stringify(existingValues));
-      };
-      return createInsert(insertFn);
-    },
-    update: (schema) => {
-      const updateFn = (
-        value: Partial<(typeof schema)["$infer"]>,
-        filterFn?: (value: (typeof schema)["$infer"]) => boolean
-      ) => {
-        const allValues = JSON.parse(
-          sessionStorage.getItem(schema._.name) ?? "[]"
-        ) as (typeof schema)["$infer"][];
-        let filteredValues = allValues;
-        if (filterFn) {
-          filteredValues = allValues.filter(filterFn);
-        }
-        const rest = allValues.filter((value) => !(filterFn?.(value) ?? true));
-        const updatedValues = filteredValues.map((oldValue) => {
-          return {
-            ...oldValue,
-            ...value,
-          };
-        });
-        sessionStorage.setItem(
-          schema._.name,
-          JSON.stringify([...rest, ...updatedValues])
-        );
-        return updatedValues;
-      };
-      return createUpdate(updateFn);
-    },
-  };
-};
+export const createLocalStoreModel = <T extends ModelConfig>(config: T) =>
+  createStoreModel(config, localStorage);
+
+export const createSessionStoreModel = <T extends ModelConfig>(config: T) =>
+  createStoreModel(config, sessionStorage);
