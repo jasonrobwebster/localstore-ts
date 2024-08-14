@@ -18,6 +18,8 @@ export interface Model<T extends ModelConfig = ModelConfig> {
   ) => Insert<TSchema>;
   insert: <TSchema extends Schema>(schema: TSchema) => Insert<TSchema>;
   update: <TSchema extends Schema>(schema: TSchema) => Update<TSchema>;
+  clear: <TSchema extends Schema>(schema: TSchema) => void;
+  clearAll: () => void;
   $infer: InferModel<Model<T>>;
 }
 
@@ -30,19 +32,19 @@ export type InferModel<T extends Model> = Simplify<{
 interface Insert<TSchema extends Schema> {
   values: (
     values: TSchema["$infer"] | TSchema["$infer"][]
-  ) => InsertValues<TSchema>;
+  ) => Inserted<TSchema>;
 }
 
-interface InsertValues<TSchema extends Schema> {
+interface Inserted<TSchema extends Schema> {
   returning: () => TSchema["$infer"][];
 }
 
 interface Update<TSchema extends Schema> {
   where: (condition: (value: TSchema["$infer"]) => boolean) => Update<TSchema>;
-  value: (values: Partial<TSchema["$infer"]>) => UpdateValues<TSchema>;
+  value: (values: Partial<TSchema["$infer"]>) => Updated<TSchema>;
 }
 
-interface UpdateValues<TSchema extends Schema> {
+interface Updated<TSchema extends Schema> {
   returning: () => TSchema["$infer"][];
 }
 
@@ -90,13 +92,13 @@ export const createStoreModel = <
   T extends ModelConfig,
   U extends Storage = Storage,
 >(
-  config: T,
+  schemas: T,
   store: U
 ): Model<T> => {
   const $infer = undefined as unknown as InferModel<Model<T>>;
   return {
     _: {
-      schemas: config,
+      schemas: schemas,
     },
     $infer,
     get: (schema) => {
@@ -158,6 +160,14 @@ export const createStoreModel = <
         return updatedValues;
       };
       return createUpdate(updateFn);
+    },
+    clear: (schema) => {
+      store.removeItem(schema._.name);
+    },
+    clearAll: () => {
+      for (const schema of Object.values(schemas)) {
+        store.removeItem(schema._.name);
+      }
     },
   };
 };
