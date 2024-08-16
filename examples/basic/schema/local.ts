@@ -1,5 +1,5 @@
-import { date, number, text } from "localstore/dtype";
-import { createSchema } from "localstore/schema";
+import { date, number, text } from "typedstore/dtype";
+import { createSchema } from "typedstore/schema";
 
 export const user = createSchema("users", {
   id: text().default(() => "default"),
