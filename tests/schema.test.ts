@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { number, text } from "~/dtype";
-import type { InferSchema } from "~/schema";
+import type { InferGetSchema } from "~/schema";
 import { createSchema } from "~/schema";
 
 describe("schema flow", () => {
@@ -17,13 +17,13 @@ describe("schema flow", () => {
       age: number().required(),
     });
 
-    type Users = (typeof users)["$infer"];
+    type Users = (typeof users)["$inferSet"];
 
-    expectTypeOf<InferSchema<typeof users>>().toEqualTypeOf<Users>();
+    expectTypeOf<InferGetSchema<typeof users>>().toEqualTypeOf<Users>();
     // @ts-expect-error: for some reason toBeString is complaining about no call signatures
     // but test passes regardless
-    expectTypeOf(users.$infer).toHaveProperty("id").toBeString();
-    expectTypeOf(users.$infer).toHaveProperty("age").toBeNumber();
+    expectTypeOf(users.$inferSet).toHaveProperty("id").toBeString();
+    expectTypeOf(users.$inferSet).toHaveProperty("age").toBeNumber();
   });
 
   it("should create a default value", () => {

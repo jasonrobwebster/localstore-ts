@@ -1,4 +1,4 @@
-import type { Schema } from "./schema";
+import type { InferGet, InferSet, Schema } from "./schema";
 import type { Simplify } from "./utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,50 +11,49 @@ export interface Model<T extends ModelConfig = ModelConfig> {
   readonly _: {
     schemas: T;
   };
-  get: <TSchema extends Schema>(schema: TSchema) => TSchema["$infer"][];
+  get: <TSchema extends Schema>(schema: TSchema) => InferGet<TSchema>[];
   set: <TSchema extends Schema>(schema: TSchema) => Insert<TSchema>;
   insert: <TSchema extends Schema>(schema: TSchema) => Insert<TSchema>;
   update: <TSchema extends Schema>(schema: TSchema) => Update<TSchema>;
   clear: <TSchema extends Schema>(schema: TSchema) => void;
   clearAll: () => void;
-  $infer: InferModel<Model<T>>;
+  $inferGet: InferModel<Model<T>>;
 }
 
-export type InferSchema<TSchema extends Schema> = TSchema["$infer"];
-
 export type InferModel<T extends Model> = Simplify<{
-  [Key in keyof T["_"]["schemas"]]: InferSchema<T["_"]["schemas"][Key]>;
+  [Key in keyof T["_"]["schemas"]]: InferGet<T["_"]["schemas"][Key]>;
 }>;
 
 interface Insert<TSchema extends Schema> {
   values: (
-    values: TSchema["$infer"] | TSchema["$infer"][]
+    values: InferSet<TSchema> | InferSet<TSchema>[]
   ) => Inserted<TSchema>;
 }
 
 interface Inserted<TSchema extends Schema> {
-  returning: () => TSchema["$infer"][];
+  returning: () => InferGet<TSchema>[];
 }
 
 interface Update<TSchema extends Schema> {
-  where: (condition: (value: TSchema["$infer"]) => boolean) => Update<TSchema>;
-  value: (values: Partial<TSchema["$infer"]>) => Updated<TSchema>;
+  where: (condition: (value: InferSet<TSchema>) => boolean) => Update<TSchema>;
+  value: (values: Partial<InferSet<TSchema>>) => Updated<TSchema>;
 }
 
 interface Updated<TSchema extends Schema> {
-  returning: () => TSchema["$infer"][];
+  returning: () => InferGet<TSchema>[];
 }
 
 const createInsert = <TSchema extends Schema>(
-  insertFn: (values: TSchema["$infer"] | TSchema["$infer"][]) => void
+  insertFn: (
+    values: InferSet<TSchema> | InferSet<TSchema>[]
+  ) => InferGet<TSchema>[]
 ): Insert<TSchema> => {
   return {
     values: (values) => {
-      insertFn(values);
+      const newValues = insertFn(values);
       return {
         returning: () => {
-          const arrValues = !Array.isArray(values) ? [values] : values;
-          return arrValues as TSchema["$infer"][];
+          return newValues;
         },
       };
     },
@@ -63,14 +62,14 @@ const createInsert = <TSchema extends Schema>(
 
 const createUpdate = <TSchema extends Schema>(
   updateFn: (
-    value: Partial<TSchema["$infer"]>,
-    filterFn?: (value: TSchema["$infer"]) => boolean
-  ) => TSchema["$infer"][],
-  filterFn?: (value: TSchema["$infer"]) => boolean
+    value: Partial<InferSet<TSchema>>,
+    filterFn?: (value: InferSet<TSchema>) => boolean
+  ) => InferGet<TSchema>[],
+  filterFn?: (value: InferSet<TSchema>) => boolean
 ): Update<TSchema> => {
   return {
     where: (condition) => {
-      const newFilterFn = (value: TSchema["$infer"]) =>
+      const newFilterFn = (value: InferSet<TSchema>) =>
         (filterFn?.(value) ?? true) && condition(value);
       return createUpdate(updateFn, newFilterFn);
     },
@@ -97,19 +96,19 @@ export const createStoreModel = <
     _: {
       schemas: schemas,
     },
-    $infer,
+    $inferGet: $infer,
     get: (schema) => {
       if (!store.getItem(schema._.name)) {
         return [];
       } else {
-        return JSON.parse(
-          store.getItem(schema._.name)!
-        ) as (typeof schema)["$infer"][];
+        return JSON.parse(store.getItem(schema._.name)!) as InferGet<
+          typeof schema
+        >[];
       }
     },
     set: (schema) => {
-      const insertFn = <TSchema extends T[string]>(
-        values: TSchema["$infer"] | TSchema["$infer"][]
+      const insertFn = <TSchema extends Schema>(
+        values: InferSet<TSchema> | InferSet<TSchema>[]
       ) => {
         const arrValues = !Array.isArray(values) ? [values] : values;
         const $default = schema.getDefault();
@@ -120,12 +119,13 @@ export const createStoreModel = <
           };
         });
         store.setItem(schema._.name, JSON.stringify(valuesWithDefault));
+        return valuesWithDefault as InferGet<TSchema>[];
       };
       return createInsert(insertFn);
     },
     insert: (schema) => {
-      const insertFn = <TSchema extends T[string]>(
-        values: TSchema["$infer"] | TSchema["$infer"][]
+      const insertFn = <TSchema extends Schema>(
+        values: InferSet<TSchema> | InferSet<TSchema>[]
       ) => {
         const arrValues = !Array.isArray(values) ? [values] : values;
         const $default = schema.getDefault();
@@ -138,17 +138,18 @@ export const createStoreModel = <
         const existingValues = JSON.parse(store.getItem(schema._.name) ?? "[]");
         existingValues.push(...valuesWithDefault);
         store.setItem(schema._.name, JSON.stringify(existingValues));
+        return valuesWithDefault as InferGet<TSchema>[];
       };
       return createInsert(insertFn);
     },
     update: (schema) => {
       const updateFn = (
-        value: Partial<(typeof schema)["$infer"]>,
-        filterFn?: (value: (typeof schema)["$infer"]) => boolean
+        value: Partial<InferSet<typeof schema>>,
+        filterFn?: (value: InferSet<typeof schema>) => boolean
       ) => {
         const allValues = JSON.parse(
           store.getItem(schema._.name) ?? "[]"
-        ) as (typeof schema)["$infer"][];
+        ) as InferSet<typeof schema>[];
         let filteredValues = allValues;
         if (filterFn) {
           filteredValues = allValues.filter(filterFn);

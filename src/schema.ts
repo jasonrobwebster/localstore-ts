@@ -13,33 +13,50 @@ export interface Schema<T extends SchemaConfig = SchemaConfig> {
     columns: T;
     name: string;
   };
-  getDefault: () => InferSchema<Schema<T>>;
-  $infer: InferSchema<Schema<T>>;
+  getDefault: () => InferGet<Schema<T>>;
+  $inferSet: InferSetSchema<Schema<T>>;
+  $inferGet: InferGetSchema<Schema<T>>;
 }
 
-export type InferDTypes<TColumns extends Record<string, DType>> = Simplify<
+export type InferDTypes<
+  TColumns extends Record<string, DType>,
+  TMode extends "get" | "set" = "set",
+> = Simplify<
   {
     [Key in keyof TColumns & string as RequiredKey<
       Key,
-      TColumns[Key]
+      TColumns[Key],
+      TMode
     >]: GetDType<GetConfig<TColumns[Key]>>;
   } & {
     [Key in keyof TColumns & string as OptionalKey<
       Key,
-      TColumns[Key]
+      TColumns[Key],
+      TMode
     >]?: GetDType<GetConfig<TColumns[Key]>>;
   }
 >;
 
-export type InferSchema<T extends Schema> = InferDTypes<T["_"]["columns"]>;
+export type InferSetSchema<T extends Schema> = InferDTypes<
+  T["_"]["columns"],
+  "set"
+>;
+export type InferGetSchema<T extends Schema> = InferDTypes<
+  T["_"]["columns"],
+  "get"
+>;
+
+export type InferSet<T extends Schema> = T["$inferSet"];
+export type InferGet<T extends Schema> = T["$inferGet"];
 
 export const createSchema = <T extends SchemaConfig>(
   name: string,
   dtypes: T
 ): Schema<T> => {
-  const $infer = undefined as unknown as InferSchema<Schema<T>>;
+  const $inferSet = undefined as unknown as InferSetSchema<Schema<T>>;
+  const $inferGet = undefined as unknown as InferGetSchema<Schema<T>>;
   const getDefault = () => {
-    const $default: InferSchema<Schema<T>> = {} as InferSchema<Schema<T>>;
+    const $default: InferGet<Schema<T>> = {} as InferGet<Schema<T>>;
     for (const key in dtypes) {
       const dtype = dtypes[key];
       if (dtype._.$defaultFn) {
@@ -54,6 +71,7 @@ export const createSchema = <T extends SchemaConfig>(
       name,
     },
     getDefault,
-    $infer,
+    $inferSet,
+    $inferGet,
   };
 };

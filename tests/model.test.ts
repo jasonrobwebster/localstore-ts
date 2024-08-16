@@ -404,6 +404,7 @@ describe("update flow", () => {
     const users = createSchema("users", {
       id: number().required(),
       age: number().required(),
+      name: text(),
     });
 
     const store = createStoreModel(mockStore, {
@@ -422,7 +423,7 @@ describe("update flow", () => {
     const updatedValues = store
       .update(users)
       .where((value) => value.id === 1)
-      .value({ age: 50 })
+      .value({ age: 50, name: "Jason" })
       .returning();
     expect(updatedValues.length).toBe(1);
     expect(updatedValues[0].age).toBe(50);
