@@ -16,7 +16,7 @@ The core of `localStore` lies in defining schemas. These are definitions of the 
 
 ```ts
 // ./schema/local.ts
-import { date, number, text } from "localStore/dtype";
+import { date, number, text } from "localstore/dtype";
 import { createSchema } from "localStore/schema";
 
 export const users = createSchema("users", {
@@ -31,7 +31,8 @@ You then define a _model_ from the schemas. In this case, we define a `localStor
 
 ```ts
 // ./store
-import { createLocalStoreModel } from "~/model";
+import { createLocalStoreModel } from "localstore";
+
 import * as localSchema from "./schema/local";
 
 export const localStore = createLocalStoreModel(localSchema);
