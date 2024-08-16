@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { number, text } from "~/dtype";
+import { date, number, text } from "~/dtype";
 import { createStoreModel } from "~/model";
 import { createSchema } from "~/schema";
 
@@ -27,12 +27,16 @@ describe("get flow", () => {
   });
 
   it("should get", () => {
+    const now = new Date();
+
     const users = createSchema("users", {
       age: number().required(),
+      createdAt: date().default(() => now),
     });
 
     const people = createSchema("people", {
       age: number().required(),
+      createdAt: date(),
     });
 
     const store = createStoreModel(mockStore, {
@@ -43,10 +47,12 @@ describe("get flow", () => {
     store.insert(users).values({ age: 20 });
     expect(store.get(users).length).toBe(1);
     expect(store.get(users)[0].age).toBe(20);
+    expect(store.get(users)[0].createdAt).toStrictEqual(now);
 
     store.insert(users).values({ age: 30 });
     expect(store.get(users).length).toBe(2);
     expect(store.get(users)[1].age).toBe(30);
+    expect(store.get(users)[1].createdAt).toStrictEqual(now);
 
     store.clear(users);
     expect(store.get(users).length).toBe(0);
@@ -54,6 +60,7 @@ describe("get flow", () => {
     store.insert(people).values({ age: 30 });
     expect(store.get(people).length).toBe(1);
     expect(store.get(people)[0].age).toBe(30);
+    expect(store.get(people)[0].createdAt).toBeUndefined();
     expect(store.get(users).length).toBe(0);
   });
 });

@@ -1,3 +1,4 @@
+import SuperJSON from "superjson";
 import type { InferGet, InferSet, Schema } from "./schema";
 import type { Simplify } from "./utils";
 
@@ -101,9 +102,9 @@ export const createStoreModel = <
       if (!store.getItem(schema._.name)) {
         return [];
       } else {
-        return JSON.parse(store.getItem(schema._.name)!) as InferGet<
-          typeof schema
-        >[];
+        return SuperJSON.parse<InferGet<typeof schema>[]>(
+          store.getItem(schema._.name)!
+        );
       }
     },
     set: (schema) => {
@@ -118,7 +119,7 @@ export const createStoreModel = <
             ...value,
           };
         });
-        store.setItem(schema._.name, JSON.stringify(valuesWithDefault));
+        store.setItem(schema._.name, SuperJSON.stringify(valuesWithDefault));
         return valuesWithDefault as InferGet<TSchema>[];
       };
       return createInsert(insertFn);
@@ -135,10 +136,13 @@ export const createStoreModel = <
             ...value,
           };
         });
-        const existingValues = JSON.parse(store.getItem(schema._.name) ?? "[]");
+        const existingValues =
+          SuperJSON.parse<InferGet<TSchema>[]>(
+            store.getItem(schema._.name) ?? "[]"
+          ) ?? [];
         existingValues.push(...valuesWithDefault);
-        store.setItem(schema._.name, JSON.stringify(existingValues));
-        return valuesWithDefault as InferGet<TSchema>[];
+        store.setItem(schema._.name, SuperJSON.stringify(existingValues));
+        return valuesWithDefault;
       };
       return createInsert(insertFn);
     },
@@ -147,9 +151,9 @@ export const createStoreModel = <
         value: Partial<InferSet<typeof schema>>,
         filterFn?: (value: InferSet<typeof schema>) => boolean
       ) => {
-        const allValues = JSON.parse(
+        const allValues = SuperJSON.parse<InferSet<typeof schema>[]>(
           store.getItem(schema._.name) ?? "[]"
-        ) as InferSet<typeof schema>[];
+        );
         let filteredValues = allValues;
         if (filterFn) {
           filteredValues = allValues.filter(filterFn);
@@ -163,7 +167,7 @@ export const createStoreModel = <
         });
         store.setItem(
           schema._.name,
-          JSON.stringify([...rest, ...updatedValues])
+          SuperJSON.stringify([...rest, ...updatedValues])
         );
         return updatedValues;
       };
