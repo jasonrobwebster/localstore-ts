@@ -1,8 +1,17 @@
 {
-  "name": "local-sync",
+  "name": "localstore",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
   "scripts": {
     "test": "vitest run",
     "coverage": "vitest run --coverage"
