@@ -1,5 +1,5 @@
-import { date, number, text } from "localStore/dtype";
-import { createSchema } from "localStore/schema";
+import { date, number, text } from "localstore/dtype";
+import { createSchema } from "localstore/schema";
 
 export const user = createSchema("users", {
   id: text().default(() => "default"),
