@@ -32,9 +32,9 @@ You then define a _model_ from the schemas. In this case, we define a `localStor
 ```ts
 // ./store
 import { createLocalStoreModel } from "~/model";
-import * as localSchema from "./schema/local"
+import * as localSchema from "./schema/local";
 
-export localStore = createLocalStoreModel(localSchema)
+export const localStore = createLocalStoreModel(localSchema);
 ```
 
 You can use your typesafe `localStorage` api as such
