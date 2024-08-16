@@ -1,4 +1,4 @@
-import { createLocalStoreModel } from "typedstore/model";
+import { createLocalStoreModel } from "localstore-ts/model";
 import * as localSchema from "./schema/local";
 
 export const localStore = createLocalStoreModel(localSchema);

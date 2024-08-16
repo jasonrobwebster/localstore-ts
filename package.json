@@ -1,5 +1,5 @@
 {
-  "name": "typedstore",
+  "name": "localstore-ts",
   "version": "1.0.0",
   "description": "",
   "exports": {

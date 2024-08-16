@@ -1,4 +1,4 @@
-# TypedStore
+# localstore-ts
 
 A typesafe api that supercharges local and session storage with database like capabilities. Inspired by [drizzle](https://orm.drizzle.team/).
 
@@ -7,7 +7,7 @@ A typesafe api that supercharges local and session storage with database like ca
 Run
 
 ```bash
-npm install typedstore
+npm install localstore-ts
 ```
 
 ## Usage
@@ -16,8 +16,8 @@ The core of `localStore` lies in defining schemas. These are definitions of the 
 
 ```ts
 // ./schema/local.ts
-import { date, number, text } from "typedstore/dtype";
-import { createSchema } from "typedstore/schema";
+import { date, number, text } from "localstore-ts/dtype";
+import { createSchema } from "localstore-ts/schema";
 
 export const users = createSchema("users", {
   id: number().required(),
@@ -31,7 +31,7 @@ You then define a _model_ from the schemas. In this case, we define a `localStor
 
 ```ts
 // ./store
-import { createLocalStoreModel } from "typedstore";
+import { createLocalStoreModel } from "localstore-ts";
 
 import * as localSchema from "./schema/local";
 
