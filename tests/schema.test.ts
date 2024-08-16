@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { number, text } from "~/dtype";
+import { date, number, text } from "~/dtype";
 import type { InferGetSchema } from "~/schema";
 import { createSchema } from "~/schema";
 
@@ -44,5 +44,17 @@ describe("schema flow", () => {
     expect(defaultUser.age).toBe(20);
     expect(defaultUser.reverseAge).toBe(30);
     expect(defaultUser.name).toBeUndefined();
+  });
+
+  it("should work with dates", () => {
+    const now = new Date();
+    const users = createSchema("users", {
+      id: text().default(() => "default"),
+      createdAt: date().default(() => now),
+    });
+
+    const defaultUser = users.getDefault();
+    expect(defaultUser.id).toBe("default");
+    expect(defaultUser.createdAt).toBe(now);
   });
 });
