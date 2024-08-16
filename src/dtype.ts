@@ -1,5 +1,4 @@
 import type { Simplify } from "./utils";
-import { v4 as uuidv4 } from "uuid";
 
 export interface DTypeBaseConfig {
   readonly transient: boolean;
@@ -98,4 +97,4 @@ export const dtypeFactory = <
 
 export const text = dtypeFactory<string>();
 export const number = dtypeFactory<number>();
-export const uuid = () => dtypeFactory<string>()().default(() => uuidv4());
+export const date = dtypeFactory<Date>();

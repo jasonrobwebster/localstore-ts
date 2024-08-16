@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { number, text, uuid } from "~/dtype";
+import { number, text } from "~/dtype";
 import { createStoreModel } from "~/model";
 import { createSchema } from "~/schema";
 
@@ -103,20 +103,6 @@ describe("insert flow", () => {
     store.insert(users).values({ id: "1" });
     expect(store.get(users).length).toBe(1);
     expect(store.get(users)[0].id).toBe("1");
-  });
-
-  it("should insert with uuid", () => {
-    const users = createSchema("users", {
-      id: uuid(),
-    });
-
-    const store = createStoreModel(mockStore, {
-      users,
-    });
-
-    store.insert(users).values({ id: "1" });
-    expect(store.get(users).length).toBe(1);
-    expect(store.get(users)[0].id).toBeDefined();
   });
 
   it("should insert multiple", () => {
