@@ -3,3 +3,4 @@ tests/
 examples/
 .gitignore/
 node_modules/
+.vscode/
